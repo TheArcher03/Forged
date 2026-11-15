@@ -4,7 +4,11 @@ A throwaway web 3D prototype of Greyford, the first village in FORGED: a first-p
 from the creek ford up the street to the knapping workshop. Three.js and plain JavaScript,
 nothing to install. This is a look-and-feel prototype only; it does not lock in the game's engine.
 
-## Run it
+## Play it
+
+https://thearcher03.github.io/Forged/ (best in Chrome or Safari on a laptop or desktop; the first load fetches about 110 MB).
+
+## Run it locally
 
 Double-click `forged-village/start.command`, or:
 
