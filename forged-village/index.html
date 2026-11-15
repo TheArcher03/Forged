@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FORGED — Stone Age village</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1c1712; font-family: -apple-system, "Helvetica Neue", sans-serif; }
+  canvas { display: block; }
+  #overlay {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(28, 23, 18, 0.72); color: #f3e6cf; cursor: pointer; z-index: 10;
+  }
+  #overlay.hidden { display: none; }
+  #card { text-align: center; max-width: 520px; padding: 24px; }
+  #card h1 { margin: 0 0 4px; font-size: 34px; letter-spacing: 6px; color: #d9773c; }
+  #card h2 { margin: 0 0 20px; font-size: 15px; font-weight: 500; opacity: 0.8; }
+  #card p { margin: 6px 0; font-size: 15px; line-height: 1.5; }
+  #card .go { margin-top: 20px; font-size: 17px; font-weight: 600; color: #ffd9a0; }
+  kbd { background: #3a2f24; border: 1px solid #5c4a38; border-radius: 4px; padding: 1px 6px; font-size: 13px; }
+  #hud {
+    position: fixed; left: 12px; bottom: 12px; color: #fff4dc; font-size: 13px; line-height: 1.5;
+    background: rgba(28, 23, 18, 0.55); padding: 8px 12px; border-radius: 6px; pointer-events: none; z-index: 5;
+    font-variant-numeric: tabular-nums;
+  }
+  #hud b { color: #ffd9a0; font-weight: 600; }
+  #crosshair {
+    position: fixed; left: 50%; top: 50%; width: 4px; height: 4px; margin: -2px 0 0 -2px;
+    border-radius: 50%; background: rgba(255, 255, 255, 0.7); pointer-events: none; z-index: 5;
+  }
+</style>
+<script type="importmap">
+  { "imports": { "three": "./lib/three.module.min.js", "three/addons/": "./lib/jsm/" } }
+</script>
+</head>
+<body>
+<div id="overlay">
+  <div id="card">
+    <h1>FORGED</h1>
+    <h2>Greyford · the Stone Age village</h2>
+    <p><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> walk · <kbd>Shift</kbd> jog · mouse to look</p>
+    <p><kbd>R</kbd> back to the ford · <kbd>Esc</kbd> release the mouse</p>
+    <p>No mouse lock? <kbd>←</kbd> <kbd>→</kbd> turn, <kbd>↑</kbd> <kbd>↓</kbd> look up and down.</p>
+    <p class="go">Click to walk</p>
+  </div>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
