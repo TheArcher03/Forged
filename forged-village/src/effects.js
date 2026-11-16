@@ -89,7 +89,7 @@ export default function createEffects(scene, T, { renderer }) {
       vertexShader: `attribute vec3 aSeed; uniform float uTime; uniform float uPx; varying float vA;
         void main(){ float age = fract(uTime * (0.25 + aSeed.x * 0.2) + aSeed.y); vA = 1.0 - age;
           vec3 p = position + vec3(sin(age * 9.0 + aSeed.z * 40.0) * 0.35 + age * age * 1.2, age * 3.6, cos(age * 7.0 + aSeed.x * 40.0) * 0.35);
-          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = uPx * 34.0 / -mv.z; }`,
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = min(uPx * 34.0 / -mv.z, uPx * 5.0); }`,
       fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; gl_FragColor = vec4(vec3(1.0, 0.5, 0.15) * 7.0 * vA, vA); }`,
     }));
     embers.frustumCulled = false; scene.add(embers);

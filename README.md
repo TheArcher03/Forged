@@ -24,10 +24,13 @@ Then open http://localhost:8137 in Chrome or Safari.
 
 - `forged-village/src/world.js` — the shape of the land, building positions and collisions
 - `forged-village/src/` — terrain, grass, forest, creek, village, sky and effects
-- `forged-village/assets/` — photo-scanned textures and models
+- `forged-village/src/people.js` — the villagers: bodies, clothing, daily routines and workshop visits
+- `forged-village/assets/` — photo-scanned textures and models, and the villager body
 - `forged-village/lib/` — a local copy of Three.js
 
 ## Credits
 
 - Scanned textures and models: [Poly Haven](https://polyhaven.com), CC0
 - [Three.js](https://threejs.org), MIT licence (see `forged-village/lib/LICENSE`)
+- Villager body: a [Ready Player Me](https://readyplayer.me) avatar from the Three.js examples. **Non-commercial use only**: replace it before any sale.
+- Villager motion (idle, walk, run): Mixamo motion capture, via the Three.js example model `Xbot.glb`

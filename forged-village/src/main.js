@@ -28,10 +28,10 @@ const T = await loadScans(makeTextures());
 const atmosphere = createAtmosphere(scene, renderer);
 createTerrain(scene, T);
 const updaters = [];
-for (const mod of ['grass', 'forest', 'cliff', 'water', 'village', 'effects']) {
+for (const mod of ['grass', 'forest', 'cliff', 'water', 'village', 'effects', 'people']) {
   try {
     const m = await import(`./${mod}.js`);
-    const up = m.default(scene, T, { camera, renderer });
+    const up = await m.default(scene, T, { camera, renderer, atmosphere });
     if (up) updaters.push(up);
   } catch (err) { console.warn(`[${mod}]`, err.message); }
 }
@@ -111,7 +111,7 @@ renderer.setAnimationLoop((now) => {
   if (window.forged.fly) { const f = window.forged.fly; camera.position.set(f.x, f.y, f.z); camera.rotation.set(f.pitch, f.yaw, 0); }
   if (shadowFrames > 0) { shadowFrames--; atmosphere.sun.shadow.needsUpdate = true; }
   camera.updateMatrixWorld();
-  for (const up of updaters) up(dt, camera);
+  for (const up of updaters) up(dt, camera, player);
   atmosphere.render(camera);
 });
 

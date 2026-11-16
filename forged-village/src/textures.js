@@ -344,15 +344,15 @@ export function makeTextures() {
   // a stretched animal hide, cut out
   T.pelt = drawn(256, 256, (g, w, h) => {
     const r = rng(71);
-    g.beginPath();
+    const o = new Path2D();
     const pts = [[128, 14], [158, 34], [228, 22], [236, 50], [196, 78], [204, 170], [240, 214], [222, 240], [170, 206], [128, 232], [86, 206], [34, 240], [16, 214], [52, 170], [60, 78], [20, 50], [28, 22], [98, 34]];
-    pts.forEach(([x, y], i) => { const a = pts[(i + 1) % pts.length]; if (!i) g.moveTo((x + a[0]) / 2, (y + a[1]) / 2); g.quadraticCurveTo(a[0], a[1], (a[0] + pts[(i + 2) % pts.length][0]) / 2, (a[1] + pts[(i + 2) % pts.length][1]) / 2); });
-    g.closePath(); g.save(); g.clip();
+    pts.forEach(([x, y], i) => { const a = pts[(i + 1) % pts.length]; if (!i) o.moveTo((x + a[0]) / 2, (y + a[1]) / 2); o.quadraticCurveTo(a[0], a[1], (a[0] + pts[(i + 2) % pts.length][0]) / 2, (a[1] + pts[(i + 2) % pts.length][1]) / 2); });
+    o.closePath(); g.save(); g.clip(o);
     const gr = g.createLinearGradient(0, 0, w, 0);
     gr.addColorStop(0, '#b08a5e'); gr.addColorStop(0.5, '#7c5a3a'); gr.addColorStop(1, '#b08a5e');
     g.fillStyle = gr; g.fillRect(0, 0, w, h);
-    for (let i = 0; i < 260; i++) { g.fillStyle = `rgba(${r() > 0.5 ? '60,40,24' : '215,185,140'},${0.05 + r() * 0.1})`; g.beginPath(); g.arc(r() * w, r() * h, 3 + r() * 16, 0, 7); g.fill(); }
-    g.restore(); g.strokeStyle = 'rgba(50,34,20,0.7)'; g.lineWidth = 4; g.stroke();
+    for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(${r() > 0.5 ? '60,40,24' : '215,185,140'},${0.03 + r() * 0.06})`; g.beginPath(); g.arc(r() * w, r() * h, 1 + r() * 5, 0, 7); g.fill(); }
+    g.restore(); g.strokeStyle = 'rgba(50,34,20,0.7)'; g.lineWidth = 4; g.stroke(o);
   }, { alpha: true });
 
   // soft round puff for smoke, mist and motes
