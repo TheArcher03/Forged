@@ -2,7 +2,8 @@
 import * as THREE from 'three';
 import { SUN_DIR } from './world.js';
 
-export const STATE = { paused: false };      // true while a shop page is open
+export const STATE = { paused: false, view: null, viewMix: 0, lastView: null };   // paused while trading; view = where the camera goes
+export const DOOR_LEAVES = {};                // each family's door, so the trading code can swing it open
 
 export const U = {
   uTime: { value: 0 },

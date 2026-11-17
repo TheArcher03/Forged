@@ -172,7 +172,7 @@ export default function createVillage(scene, T) {
   };
 
   // ---- Hide House: stretched hides on frames and a little smoke tent
-  for (const [x, z, ang] of [[6.2, 12.4, 0.5], [5.6, 19.6, -0.35], [8.3, 21.6, 0.9]]) {
+  for (const [x, z, ang] of [[5.3, 10.9, 0.5], [4.7, 21.5, -0.35], [8.4, 22.3, 0.9]]) {   // clear of the doorway approach
     const y = W.terrainHeight(x, z), tx = Math.cos(ang), tz = Math.sin(ang), lean = V(-tz * 0.22, 1, tx * 0.22).normalize();
     const foot = (s) => V(x + tx * s * 0.85, y - 0.25, z + tz * s * 0.85), head = (s) => foot(s).addScaledVector(lean, 2.25);
     for (const s of [-1, 1]) { pole(wood, foot(s), head(s), 0.05, 0.04); solid(x + tx * s * 0.85, z + tz * s * 0.85, 0.12); }
@@ -192,14 +192,15 @@ export default function createVillage(scene, T) {
 
   // ---- Hearth House: clay oven, a bench, grain baskets and a wattle pen
   {
-    const x = 6.6, z = 43.6, y = W.terrainHeight(x, z);
+    const x = W.OVEN.x, z = W.OVEN.z, y = W.terrainHeight(x, z);
     const oven = new THREE.Mesh(new THREE.SphereGeometry(0.95, 28, 14, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ map: T.dirt.map, normalMap: T.dirt.normalMap, color: 0xc49172, roughness: 0.95, normalScale: new THREE.Vector2(1.6, 1.6) }));
     oven.scale.set(1, 0.9, 1.15); oven.position.set(x, y - 0.05, z); oven.castShadow = oven.receiveShadow = true; scene.add(oven);
     for (let a = 0; a < TAU; a += 0.42) rocks.push([x + Math.cos(a) * 1.0, y + 0.05, z + Math.sin(a) * 1.2, 0.14 + r() * 0.08, 0.7]);
     SMOKE.push([x, y + 0.95, z, 0.6]); solid(x, z, 1.05);   // its glowing mouth is in hearths.js
-    log(V(5.3, y + 0.36, 39.2), V(7.6, y + 0.36, 40.0), 0.2);                    // the bench everyone stops at
-    log(V(5.6, y - 0.1, 39.3), V(5.6, y + 0.2, 39.3), 0.16); log(V(7.3, y - 0.1, 39.9), V(7.3, y + 0.2, 39.9), 0.16);
-    solid(5.8, 39.4, 0.4); solid(7.1, 39.85, 0.4);
+    const by = W.terrainHeight(5, 36.6);                                          // the bench everyone stops at, back from the path
+    log(V(3.9, by + 0.36, 36.2), V(6.1, by + 0.36, 36.9), 0.2);
+    log(V(4.2, by - 0.1, 36.3), V(4.2, by + 0.2, 36.3), 0.16); log(V(5.8, by - 0.1, 36.8), V(5.8, by + 0.2, 36.8), 0.16);
+    solid(4.4, 36.4, 0.4); solid(5.6, 36.75, 0.4);
     const pen = [];
     for (let k = 0; k <= 16; k++) { const a = (k / 16) * TAU; pen.push([17.6 + Math.cos(a) * 2.3, 48.6 + Math.sin(a) * 2.3]); }
     fence(pen, 1.05);
@@ -212,11 +213,11 @@ export default function createVillage(scene, T) {
   const potProfile = [[0.001, 0], [0.16, 0.0], [0.27, 0.12], [0.31, 0.3], [0.26, 0.46], [0.17, 0.55], [0.2, 0.62], [0.17, 0.62], [0.14, 0.55]].map(([x, y]) => new THREE.Vector2(x, y));
   const potSpots = [];
   for (let i = 0, tries = 0; i < 16 && tries < 400; tries++) {             // drying pots along the wall, clear of the porch
-    const x = -5.6 - r() * 3.4, z = 27.3 + r() * 2.6, clay = W.HOUSES[1];
-    if (Math.hypot(x - clay.x, z - clay.z) < clay.r + 0.55 || (z < 27.3 && x > -7.2)) continue;
+    const x = -5.4 - r() * 3.4, z = 28.6 + r() * 2.0, clay = W.HOUSES[1];
+    if (Math.hypot(x - clay.x, z - clay.z) < clay.r + 0.55) continue;
     potSpots.push([x, z, 0.6 + r() * 0.9]); i++;
   }
-  for (const [x, z] of [[4.9, 41.6], [5.3, 42.3], [8.9, 44.9]]) potSpots.push([x, z, 1.2]);              // grain jars by the oven
+  for (const [x, z] of [[3.9, 48.4], [4.6, 48.9], [6.7, 48.6]]) potSpots.push([x, z, 1.2]);              // grain jars by the oven
   for (const [x, z] of [[-3.2, 61.5], [-3.7, 62.2]]) potSpots.push([x, z, 0.9]);                            // birch tar and water in the workshop
   const pots = new THREE.InstancedMesh(new THREE.LatheGeometry(potProfile, 14), clayMat, potSpots.length);
   const m = new THREE.Object3D(), col = new THREE.Color();
@@ -267,7 +268,7 @@ export default function createVillage(scene, T) {
 
   // ---- wicker baskets (scanned) by the oven, the doors and the workshop
   if (T.scan?.wicker_basket_01) {
-    const g = T.scan.wicker_basket_01.list[0], spots = [[5.0, 43.2], [8.2, 41.0], [-7.2, 24.4], [7.4, 14.6], [1.9, 63.2], [2.4, 63.9], [-1.6, 57.2]];
+    const g = T.scan.wicker_basket_01.list[0], spots = [[3.8, 47.6], [7.0, 47.9], [-8.7, 29.4], [9.7, 11.0], [1.9, 63.2], [2.4, 63.9], [-1.6, 57.2]];   // none in a doorway's path
     const baskets = new THREE.InstancedMesh(g, T.scan.wicker_basket_01.material, spots.length);
     spots.forEach(([x, z], i) => {
       const s = 1.5 + r() * 0.6; m.position.set(x, W.terrainHeight(x, z), z); m.rotation.set(0, r() * TAU, 0); m.scale.set(s, s, s); m.updateMatrix();

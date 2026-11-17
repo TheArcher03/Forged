@@ -23,8 +23,8 @@ export const HOUSES = [
 export const FIRE = { x: 0, z: 32, ringR: 1.1, plazaR: 5.0 };
 export const STANDING_STONE = { x: -3.6, z: 33.4, w: 0.9, d: 0.5, h: 3.2 };
 export const TEST_YARD = { x: 0, z: 72.5, half: 6 };
-export const KILN = { x: -5.6, z: 21.4 };   // the Clay House's pit kiln
-export const OVEN = { x: 6.6, z: 43.6 };    // the Hearth House's clay oven
+export const KILN = { x: -6.1, z: 20.3 };   // the Clay House's pit kiln
+export const OVEN = { x: 5.3, z: 46.9 };    // the Hearth House's clay oven, set back from its doorway
 // Ground kept bare around fires, so grass doesn't grow through them.
 export const CLEARINGS = [{ x: KILN.x, z: KILN.z, r: 2.0 }, { x: OVEN.x, z: OVEN.z, r: 1.9 }];
 
@@ -115,6 +115,7 @@ export function dirtAmount(x, z) {
   if (z > 1.0 && z < 57) a = Math.max(a, smoothstep(0.9, -0.3, Math.abs(x - roadX(z)) - roadHalfWidth(z) + wob));
   a = Math.max(a, smoothstep(1.0, -0.4, Math.hypot(x - FIRE.x, z - FIRE.z) - FIRE.plazaR + wob));
   for (const c of CLEARINGS) a = Math.max(a, smoothstep(0.7, -0.3, Math.hypot(x - c.x, z - c.z) - c.r + wob));
+  for (const c of tableSpots()) a = Math.max(a, 0.85 * smoothstep(0.7, -0.3, Math.hypot(x - c.x, z - c.z) - c.r + wob));   // trodden ground round each trading table
   for (const b of HOUSES) {
     a = Math.max(a, smoothstep(0.8, -0.2, Math.hypot(x - b.x, z - b.z) - (b.r + 0.7) + wob));
     const d = doorOf(b);
@@ -176,5 +177,20 @@ export const DOORS = [
 // A clear line of sight along the near (village-side) bank to the heron fishing past the
 // western boulders. Nothing tall is planted here.
 export const heronView = (x, z) => x > -36 && x < -11 && z > creekZ(x) + 0.5 && z < creekZ(x) + 7.5;
+
+// Each family's trading table: beside its doorway, off the path. side = which side of the path.
+export const TRADE = { hide: { side: -1 }, hearth: { side: 1 }, clay: { side: -1 } };
+// The doorway's local frame: n = out from the wall, h = height, t = along the wall.
+export function doorFrame(b) {
+  const dir = doorOf(b).dir, y0 = terrainHeight(b.x, b.z);
+  return { dir, y0, at: (n, h, t) => ({ x: b.x + dir * (b.r + n), y: y0 + h, z: b.z + t * dir }) };
+}
+
+// Bare, trodden ground round each trading table and on the path side where you stand to trade.
+let _tables = null;
+function tableSpots() {
+  if (!_tables) _tables = HOUSES.map((b) => { const f = doorFrame(b), s = TRADE[b.key].side, c = f.at(2.1, 0, s * 1.75); return { x: c.x, z: c.z, r: 1.45 }; });
+  return _tables;
+}
 
 export const insideWorkshop = (x, z) => Math.hypot(x - WORKSHOP.x, z - WORKSHOP.z) < WORKSHOP.r;

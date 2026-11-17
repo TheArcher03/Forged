@@ -47,7 +47,7 @@ overlay.addEventListener('click', () => {
   player.started = true; overlay.classList.add('hidden');
   renderer.domElement.requestPointerLock?.()?.catch?.(() => {});
 });
-renderer.domElement.addEventListener('click', () => { if (player.started) renderer.domElement.requestPointerLock?.()?.catch?.(() => {}); });
+renderer.domElement.addEventListener('click', () => { if (player.started && !STATE.paused) renderer.domElement.requestPointerLock?.()?.catch?.(() => {}); });
 document.addEventListener('mousemove', (e) => {
   if (document.pointerLockElement !== renderer.domElement) return;
   player.yaw -= e.movementX * 0.0021;
@@ -97,7 +97,17 @@ function step(dt) {
   camera.position.y += (y - camera.position.y) * (1 - Math.exp(-dt * 14)); // smooth over bumps
   camera.position.x = player.x + Math.cos(player.bob * 0.5) * 0.012; camera.position.z = player.z;
   camera.rotation.set(player.pitch, player.yaw, Math.sin(player.bob * 0.5) * 0.0025);
+
+  // trading: the camera glides from your eyes to the trading table, and back again
+  if (STATE.view) STATE.lastView = STATE.view;
+  STATE.viewMix += ((STATE.view ? 1 : 0) - STATE.viewMix) * (1 - Math.exp(-dt * 3.4));
+  if (STATE.viewMix > 0.002 && STATE.lastView) {
+    const k = STATE.viewMix * STATE.viewMix * (3 - 2 * STATE.viewMix);
+    _viewM.lookAt(STATE.lastView.pos, STATE.lastView.target, _viewUp); _viewQ.setFromRotationMatrix(_viewM);
+    camera.position.lerp(STATE.lastView.pos, k); camera.quaternion.slerp(_viewQ, k);
+  }
 }
+const _viewM = new THREE.Matrix4(), _viewQ = new THREE.Quaternion(), _viewUp = new THREE.Vector3(0, 1, 0);
 camera.position.y = W.groundHeight(W.START.x, W.START.z) + EYE_HEIGHT;
 
 // Nothing that casts a shadow moves, so the sun's shadows are drawn once and kept.
