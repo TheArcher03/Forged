@@ -90,21 +90,13 @@ export default function createVillage(scene, T) {
   }
 
   const daubMat = new THREE.MeshStandardMaterial({ map: T.dirt.map, normalMap: T.dirt.normalMap, color: 0x8a6f55, roughness: 1, side: THREE.DoubleSide });
-  const darkMat = new THREE.MeshBasicMaterial({ color: 0x050403 });
 
   // ---- the three family houses, each with a low hide-hung doorway facing the road
   for (const b of W.HOUSES) {
     const d = W.doorOf(b), ga = d.dir > 0 ? Math.PI / 2 : -Math.PI / 2, gh = 0.62 / b.r;
     const y = roundhouse(b, ga, gh);
     const px = (a, rad) => V(b.x + Math.sin(a) * rad, 0, b.z + Math.cos(a) * rad);
-    const pA = px(ga - gh, b.r + 0.02), pB = px(ga + gh, b.r + 0.02);
-    pole(wood, V(pA.x, y - 0.3, pA.z), V(pA.x, y + 1.72, pA.z), 0.12, 0.1, 7);
-    pole(wood, V(pB.x, y - 0.3, pB.z), V(pB.x, y + 1.72, pB.z), 0.12, 0.1, 7);
-    pole(wood, V(pA.x, y + 1.66, pA.z).lerp(V(pB.x, y + 1.66, pB.z), -0.15), V(pB.x, y + 1.66, pB.z).lerp(V(pA.x, y + 1.66, pA.z), -0.15), 0.1, 0.09, 7);
-    const back = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 2.0), darkMat);     // darkness inside the door
-    back.position.set(b.x + d.dir * (b.r - 0.45), y + 0.9, b.z); back.rotation.y = d.dir > 0 ? Math.PI / 2 : -Math.PI / 2; scene.add(back);
-    const mid = px(ga + gh * 0.3, b.r + 0.06);                                   // door hide, tied half back
-    hide.card(V(mid.x, y + 0.86, mid.z), V(0, 0, 0.42), V(d.dir * 0.05, 0.8, 0), flat(V(d.dir, 0.1, 0).normalize()));
+    void y; void px;   // the doorway itself (posts, porch, curtain) is built in entrances.js
   }
 
   // ---- our workshop: bigger, open to the street
@@ -136,9 +128,7 @@ export default function createVillage(scene, T) {
   // ---- village fire: ring of stones, burning logs, log seats, the standing stone
   {
     const f = W.FIRE, y = W.terrainHeight(f.x, f.z);
-    for (let i = 0; i < 13; i++) { const a = (i / 13) * TAU; rocks.push([f.x + Math.cos(a) * f.ringR, y + 0.08, f.z + Math.sin(a) * f.ringR, 0.2 + r() * 0.1, 0.8]); }
-    for (let i = 0; i < 6; i++) { const a = (i / 6) * TAU + 0.3; pole(char, V(f.x + Math.cos(a) * 0.62, y + 0.05, f.z + Math.sin(a) * 0.62), V(f.x - Math.cos(a) * 0.1, y + 0.62, f.z - Math.sin(a) * 0.1), 0.085, 0.06, 7); }
-    FLAMES.push([f.x, y + 0.12, f.z, 1]); SMOKE.push([f.x, y + 1.0, f.z, 1.5]);
+    // the fire itself (stones, logs, coals, flames) is built in hearths.js
     for (const [a, d, len] of [[0.5, 2.6, 2.0], [2.5, 2.7, 1.7], [4.4, 2.5, 2.2]]) {
       const cx = f.x + Math.cos(a) * d, cz = f.z + Math.sin(a) * d, tx = -Math.sin(a), tz = Math.cos(a);
       log(V(cx - tx * len / 2, y + 0.2, cz - tz * len / 2), V(cx + tx * len / 2, y + 0.2, cz + tz * len / 2), 0.24);
@@ -203,11 +193,10 @@ export default function createVillage(scene, T) {
   // ---- Hearth House: clay oven, a bench, grain baskets and a wattle pen
   {
     const x = 6.6, z = 43.6, y = W.terrainHeight(x, z);
-    const oven = new THREE.Mesh(new THREE.SphereGeometry(0.95, 20, 12, 0, TAU, 0, Math.PI / 2), clayMat);
+    const oven = new THREE.Mesh(new THREE.SphereGeometry(0.95, 28, 14, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ map: T.dirt.map, normalMap: T.dirt.normalMap, color: 0xc49172, roughness: 0.95, normalScale: new THREE.Vector2(1.6, 1.6) }));
     oven.scale.set(1, 0.9, 1.15); oven.position.set(x, y - 0.05, z); oven.castShadow = oven.receiveShadow = true; scene.add(oven);
-    const mouth = new THREE.Mesh(new THREE.CircleGeometry(0.3, 14), darkMat); mouth.position.set(x - 0.86, y + 0.3, z); mouth.rotation.y = -Math.PI / 2; mouth.scale.y = 0.85; scene.add(mouth);
     for (let a = 0; a < TAU; a += 0.42) rocks.push([x + Math.cos(a) * 1.0, y + 0.05, z + Math.sin(a) * 1.2, 0.14 + r() * 0.08, 0.7]);
-    SMOKE.push([x, y + 0.95, z, 0.6]); FLAMES.push([x - 0.7, y + 0.16, z, 0.3]); solid(x, z, 1.05);
+    SMOKE.push([x, y + 0.95, z, 0.6]); solid(x, z, 1.05);   // its glowing mouth is in hearths.js
     log(V(5.3, y + 0.36, 39.2), V(7.6, y + 0.36, 40.0), 0.2);                    // the bench everyone stops at
     log(V(5.6, y - 0.1, 39.3), V(5.6, y + 0.2, 39.3), 0.16); log(V(7.3, y - 0.1, 39.9), V(7.3, y + 0.2, 39.9), 0.16);
     solid(5.8, 39.4, 0.4); solid(7.1, 39.85, 0.4);
@@ -217,16 +206,16 @@ export default function createVillage(scene, T) {
   }
   // ---- Clay House: pit kiln and pots set out to dry
   {
-    const x = -5.6, z = 21.4, y = W.terrainHeight(x, z);
-    for (let a = 0; a < TAU; a += 0.36) rocks.push([x + Math.cos(a) * 1.1, y + 0.08, z + Math.sin(a) * 1.1, 0.19 + r() * 0.1, 0.75]);
-    const ash = new THREE.Mesh(new THREE.SphereGeometry(1.0, 14, 8, 0, TAU, 0, Math.PI / 2), new THREE.MeshStandardMaterial({ color: 0x1a1613, roughness: 1 }));
-    ash.scale.set(1, 0.35, 1); ash.position.set(x, y, z); ash.receiveShadow = true; scene.add(ash);
-    SMOKE.push([x, y + 0.4, z, 0.9]); FLAMES.push([x, y + 0.2, z, 0.35]); solid(x, z, 1.25);
+    // the pit kiln itself is built in hearths.js
     fence([[-6.2, 29.6], [-9.0, 31.4], [-12.6, 31.9]], 0.85);
   }
   const potProfile = [[0.001, 0], [0.16, 0.0], [0.27, 0.12], [0.31, 0.3], [0.26, 0.46], [0.17, 0.55], [0.2, 0.62], [0.17, 0.62], [0.14, 0.55]].map(([x, y]) => new THREE.Vector2(x, y));
   const potSpots = [];
-  for (let i = 0; i < 16; i++) potSpots.push([-6.4 - r() * 2.6, 25.2 + r() * 3.2, 0.6 + r() * 0.9]);
+  for (let i = 0, tries = 0; i < 16 && tries < 400; tries++) {             // drying pots along the wall, clear of the porch
+    const x = -5.6 - r() * 3.4, z = 27.3 + r() * 2.6, clay = W.HOUSES[1];
+    if (Math.hypot(x - clay.x, z - clay.z) < clay.r + 0.55 || (z < 27.3 && x > -7.2)) continue;
+    potSpots.push([x, z, 0.6 + r() * 0.9]); i++;
+  }
   for (const [x, z] of [[4.9, 41.6], [5.3, 42.3], [8.9, 44.9]]) potSpots.push([x, z, 1.2]);              // grain jars by the oven
   for (const [x, z] of [[-3.2, 61.5], [-3.7, 62.2]]) potSpots.push([x, z, 0.9]);                            // birch tar and water in the workshop
   const pots = new THREE.InstancedMesh(new THREE.LatheGeometry(potProfile, 14), clayMat, potSpots.length);

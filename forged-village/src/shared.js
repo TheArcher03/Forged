@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import { SUN_DIR } from './world.js';
 
+export const STATE = { paused: false };      // true while a shop page is open
+
 export const U = {
   uTime: { value: 0 },
   uSunDir: { value: new THREE.Vector3(SUN_DIR.x, SUN_DIR.y, SUN_DIR.z) },

@@ -1,7 +1,7 @@
 // FORGED — Stone Age village. Builds the scene and lets you walk it in first person.
 import * as THREE from 'three';
 import * as W from './world.js';
-import { U } from './shared.js';
+import { U, STATE } from './shared.js';
 import { makeTextures } from './textures.js';
 import { createAtmosphere } from './atmosphere.js';
 import { createTerrain } from './terrain.js';
@@ -28,10 +28,10 @@ const T = await loadScans(makeTextures());
 const atmosphere = createAtmosphere(scene, renderer);
 createTerrain(scene, T);
 const updaters = [];
-for (const mod of ['grass', 'forest', 'cliff', 'water', 'village', 'effects']) {
+for (const mod of ['grass', 'forest', 'cliff', 'water', 'village', 'hearths', 'entrances', 'effects', 'wildlife', 'shops']) {
   try {
     const m = await import(`./${mod}.js`);
-    const up = m.default(scene, T, { camera, renderer });
+    const up = await m.default(scene, T, { camera, renderer });
     if (up) updaters.push(up);
   } catch (err) { console.warn(`[${mod}]`, err.message); }
 }
@@ -55,7 +55,7 @@ document.addEventListener('mousemove', (e) => {
 });
 window.addEventListener('keydown', (e) => {
   keys.add(e.code);
-  if (e.code === 'KeyR') reset();
+  if (e.code === 'KeyR' && !STATE.paused) reset();
   if (e.code.startsWith('Arrow') || e.code === 'Space') e.preventDefault();
 });
 window.addEventListener('keyup', (e) => keys.delete(e.code));
@@ -70,6 +70,7 @@ window.addEventListener('resize', () => {
 atmosphere.resize(window.innerWidth, window.innerHeight);
 
 function step(dt) {
+  if (STATE.paused) keys.clear();                                   // a shop page is open: stand still
   if (keys.has('ArrowLeft')) player.yaw += 1.6 * dt;
   if (keys.has('ArrowRight')) player.yaw -= 1.6 * dt;
   if (keys.has('ArrowUp')) player.pitch = Math.min(1.45, player.pitch + 1.1 * dt);
@@ -111,7 +112,7 @@ renderer.setAnimationLoop((now) => {
   if (window.forged.fly) { const f = window.forged.fly; camera.position.set(f.x, f.y, f.z); camera.rotation.set(f.pitch, f.yaw, 0); }
   if (shadowFrames > 0) { shadowFrames--; atmosphere.sun.shadow.needsUpdate = true; }
   camera.updateMatrixWorld();
-  for (const up of updaters) up(dt, camera);
+  for (const up of updaters) up(dt, camera, player);
   atmosphere.render(camera);
 });
 

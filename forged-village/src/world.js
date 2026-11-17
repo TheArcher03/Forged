@@ -23,6 +23,10 @@ export const HOUSES = [
 export const FIRE = { x: 0, z: 32, ringR: 1.1, plazaR: 5.0 };
 export const STANDING_STONE = { x: -3.6, z: 33.4, w: 0.9, d: 0.5, h: 3.2 };
 export const TEST_YARD = { x: 0, z: 72.5, half: 6 };
+export const KILN = { x: -5.6, z: 21.4 };   // the Clay House's pit kiln
+export const OVEN = { x: 6.6, z: 43.6 };    // the Hearth House's clay oven
+// Ground kept bare around fires, so grass doesn't grow through them.
+export const CLEARINGS = [{ x: KILN.x, z: KILN.z, r: 2.0 }, { x: OVEN.x, z: OVEN.z, r: 1.9 }];
 
 export const STEPPING_STONES = [
   { x: -1.3, z: -2.0, r: 0.45 }, { x: -1.0, z: -1.1, r: 0.5 }, { x: -1.4, z: -0.2, r: 0.42 },
@@ -110,6 +114,7 @@ export function dirtAmount(x, z) {
   let a = 0;
   if (z > 1.0 && z < 57) a = Math.max(a, smoothstep(0.9, -0.3, Math.abs(x - roadX(z)) - roadHalfWidth(z) + wob));
   a = Math.max(a, smoothstep(1.0, -0.4, Math.hypot(x - FIRE.x, z - FIRE.z) - FIRE.plazaR + wob));
+  for (const c of CLEARINGS) a = Math.max(a, smoothstep(0.7, -0.3, Math.hypot(x - c.x, z - c.z) - c.r + wob));
   for (const b of HOUSES) {
     a = Math.max(a, smoothstep(0.8, -0.2, Math.hypot(x - b.x, z - b.z) - (b.r + 0.7) + wob));
     const d = doorOf(b);
@@ -162,4 +167,10 @@ export function resolveCollisions(pos) {
   }
   return pos;
 }
+// Where each building can be entered: (x, z) is where you stand, (fx, fz) is the doorway itself.
+export const DOORS = [
+  ...HOUSES.map((b) => { const d = doorOf(b); return { key: b.key, x: b.x + d.dir * (b.r + 1.0), z: b.z, fx: b.x + d.dir * b.r, fz: b.z, reach: 2.4 }; }),
+  { key: 'workshop', x: WORKSHOP.x, z: WORKSHOP.z - 3.6, fx: WORKSHOP.x, fz: WORKSHOP.z - 1.4, reach: 3.4 },
+];
+
 export const insideWorkshop = (x, z) => Math.hypot(x - WORKSHOP.x, z - WORKSHOP.z) < WORKSHOP.r;

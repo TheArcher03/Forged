@@ -50,47 +50,68 @@ export default function createEffects(scene, T, { renderer }) {
     smoke.frustumCulled = false; smoke.renderOrder = 5; scene.add(smoke);
   }
 
-  // ---- flames: flickering tongues drawn on upright cards, plus firelight
-  const lights = [];
-  for (const [x, y, z, size] of FLAMES) {
-    const mat = new THREE.ShaderMaterial({
-      transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
-      uniforms: { uTime: U.uTime, uSeed: { value: r() * 10 } },
-      vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `
-        uniform float uTime; uniform float uSeed; varying vec2 vUv;
-        float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
-        float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
-          return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
-        void main(){
-          vec2 p = vUv; float t = uTime * 1.9 + uSeed;
-          float n = noise(vec2(p.x * 4.0 + uSeed, p.y * 3.0 - t * 2.2)) * 0.6 + noise(vec2(p.x * 9.0, p.y * 7.0 - t * 3.6)) * 0.4;
-          float shape = 1.0 - abs(p.x - 0.5 + (n - 0.5) * 0.35 * p.y) * (2.2 + p.y * 3.0);
-          float f = clamp(shape - p.y * (0.55 + n * 0.9), 0.0, 1.0);
-          vec3 col = mix(vec3(1.0, 0.18, 0.02), vec3(1.0, 0.72, 0.22), f) * f * 5.5 + vec3(1.0, 0.95, 0.8) * pow(f, 4.0) * 4.0;
-          gl_FragColor = vec4(col, f);
-        }`,
-    });
-    for (let k = 0; k < 3; k++) {
-      const card = new THREE.Mesh(new THREE.PlaneGeometry(1.25 * size, 1.7 * size), mat);
-      card.position.set(x, y + 0.8 * size, z); card.rotation.y = (k / 3) * Math.PI; card.renderOrder = 4; scene.add(card);
+  // ---- flames: ragged tongues on cards that turn to face you, plus firelight.
+  // Each fire is several cards of different sizes and timings, so it never repeats.
+  const lights = [], cards = [];
+  const flameMat = (seed) => new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: true,
+    uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, { uTime: { value: 0 }, uSeed: { value: seed } }]),
+    vertexShader: `varying vec2 vUv;
+      #include <fog_pars_vertex>
+      void main(){ vUv = uv; vec4 mvPosition = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mvPosition;
+      #include <fog_vertex>
+      }`,
+    fragmentShader: `
+      uniform float uTime; uniform float uSeed; varying vec2 vUv;
+      #include <fog_pars_fragment>
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float noise(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.0-2.0*f);
+        return mix(mix(hash(i), hash(i+vec2(1,0)), f.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), f.x), f.y); }
+      float fbm(vec2 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++){ s += a * noise(p); p = p * 2.03 + 1.7; a *= 0.5; } return s; }
+      void main(){
+        vec2 p = vUv - vec2(0.5, 0.0); float t = uTime * 1.15 + uSeed * 7.0;
+        float n  = fbm(vec2(p.x * 3.2 + uSeed, p.y * 2.4 - t * 2.4));
+        float n2 = fbm(vec2(p.x * 7.0 - uSeed, p.y * 5.0 - t * 4.1));
+        float x = p.x + (n - 0.5) * 0.42 * p.y + (n2 - 0.5) * 0.1;              // the flame sways and licks
+        float width = mix(0.36, 0.03, pow(clamp(p.y, 0.0, 1.0), 0.75));
+        float body = 1.0 - smoothstep(width * 0.35, width, abs(x));
+        float top = smoothstep(0.98, 0.2 + 0.45 * n, p.y);                        // ragged, breaking tips
+        float f = body * top * smoothstep(0.0, 0.07, p.y);
+        f *= smoothstep(0.08, 0.5, n2 + 0.75 - p.y * 0.75);                       // tongues tear away near the top
+        float core = pow(f, 2.5) * smoothstep(0.6, 0.05, p.y);
+        vec3 col = vec3(0.9, 0.16, 0.02) * f * 1.6 + vec3(1.0, 0.5, 0.12) * pow(f, 1.5) * 2.6 + vec3(1.0, 0.86, 0.6) * core * 3.2;
+        gl_FragColor = vec4(col, f);
+        #include <fog_fragment>
+      }`,
+  });
+  for (const fl of FLAMES) {
+    if (fl.size > 0) for (let k = 0; k < 3; k++) {
+      const s = fl.size * (k === 0 ? 1 : 0.62 + r() * 0.25), mat = flameMat(r() * 10);
+      const g = new THREE.PlaneGeometry(1.0 * s, 1.55 * s); g.translate(0, 0.775 * s, 0);
+      const card = new THREE.Mesh(g, mat);
+      card.position.set(fl.x + (k ? (r() - 0.5) * 0.25 * fl.size : 0), fl.y - 0.02, fl.z + (k ? (r() - 0.5) * 0.25 * fl.size : 0));
+      card.renderOrder = 4; card.frustumCulled = false; scene.add(card); cards.push(card);
     }
-    const light = new THREE.PointLight(0xff7a2a, 26 * size * size, 16 * Math.sqrt(size), 1.8);
-    light.position.set(x, y + 0.9 * size, z); scene.add(light); lights.push([light, 26 * size * size, r() * 10]);
+    if (fl.light) {
+      const light = new THREE.PointLight(0xff7a2a, fl.light, 4 + Math.sqrt(fl.light) * 2.4, 1.8);
+      light.position.set(fl.x, fl.y + 0.6 * Math.max(fl.size, 0.4), fl.z); scene.add(light); lights.push([light, fl.light, r() * 10]);
+    }
   }
 
-  // ---- embers rising from the village fire
+  // ---- sparks rising from the bigger fires
   {
-    const f = W.FIRE, n = 60, pos = new Float32Array(n * 3), seed = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { pos.set([f.x, W.terrainHeight(f.x, f.z) + 0.5, f.z], i * 3); seed.set([r(), r(), r()], i * 3); }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 3));
+    const sources = FLAMES.filter((fl) => fl.size >= 0.4), PER = 50, n = sources.length * PER;
+    const pos = new Float32Array(n * 3), seed = new Float32Array(n * 4);
+    sources.forEach((fl, e) => { for (let i = 0; i < PER; i++) { pos.set([fl.x, fl.y + 0.3 * fl.size, fl.z], (e * PER + i) * 3); seed.set([r(), r(), r(), fl.size], (e * PER + i) * 4); } });
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('aSeed', new THREE.BufferAttribute(seed, 4));
     const embers = new THREE.Points(g, new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, uniforms: { uTime: U.uTime, uPx: { value: px } },
-      vertexShader: `attribute vec3 aSeed; uniform float uTime; uniform float uPx; varying float vA;
-        void main(){ float age = fract(uTime * (0.25 + aSeed.x * 0.2) + aSeed.y); vA = 1.0 - age;
-          vec3 p = position + vec3(sin(age * 9.0 + aSeed.z * 40.0) * 0.35 + age * age * 1.2, age * 3.6, cos(age * 7.0 + aSeed.x * 40.0) * 0.35);
-          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = min(uPx * 34.0 / -mv.z, uPx * 5.0); }`,
-      fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; gl_FragColor = vec4(vec3(1.0, 0.5, 0.15) * 7.0 * vA, vA); }`,
+      vertexShader: `attribute vec4 aSeed; uniform float uTime; uniform float uPx; varying float vA;
+        void main(){ float age = fract(uTime * (0.22 + aSeed.x * 0.25) + aSeed.y); vA = (1.0 - age) * step(0.35, fract(aSeed.z * 7.0));
+          float s = aSeed.w;
+          vec3 p = position + vec3(sin(age * 9.0 + aSeed.z * 40.0) * 0.3 * s + age * age * 1.2 * s, age * 3.4 * s, cos(age * 7.0 + aSeed.x * 40.0) * 0.3 * s);
+          vec4 mv = modelViewMatrix * vec4(p, 1.0); gl_Position = projectionMatrix * mv; gl_PointSize = min(uPx * 30.0 / -mv.z, uPx * 4.0); }`,
+      fragmentShader: `varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; gl_FragColor = vec4(vec3(1.0, 0.5, 0.15) * 6.0 * vA, vA); }`,
     }));
     embers.frustumCulled = false; scene.add(embers);
   }
@@ -139,9 +160,14 @@ export default function createEffects(scene, T, { renderer }) {
     mist.renderOrder = 3; mist.frustumCulled = false; scene.add(mist);
   }
 
+  const _q = new THREE.Quaternion(), _up = new THREE.Vector3(0, 1, 0);
   return (dt, camera) => {
     camA.copy(camera.position); camB.copy(camera.position);
     const t = U.uTime.value;
+    for (const c of cards) {                                // turn each flame card to face the viewer, upright
+      c.quaternion.setFromAxisAngle(_up, Math.atan2(camera.position.x - c.position.x, camera.position.z - c.position.z));
+      c.material.uniforms.uTime.value = t;
+    }
     for (const [light, base, seed] of lights) light.intensity = base * (0.78 + 0.16 * Math.sin(t * 11 + seed) + 0.1 * Math.sin(t * 23.7 + seed * 2) + 0.06 * Math.sin(t * 5.1));
   };
 }
