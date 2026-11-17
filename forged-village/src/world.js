@@ -173,4 +173,8 @@ export const DOORS = [
   { key: 'workshop', x: WORKSHOP.x, z: WORKSHOP.z - 3.6, fx: WORKSHOP.x, fz: WORKSHOP.z - 1.4, reach: 3.4 },
 ];
 
+// A clear line of sight along the near (village-side) bank to the heron fishing past the
+// western boulders. Nothing tall is planted here.
+export const heronView = (x, z) => x > -36 && x < -11 && z > creekZ(x) + 0.5 && z < creekZ(x) + 7.5;
+
 export const insideWorkshop = (x, z) => Math.hypot(x - WORKSHOP.x, z - WORKSHOP.z) < WORKSHOP.r;

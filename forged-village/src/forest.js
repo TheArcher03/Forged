@@ -274,7 +274,7 @@ export default function createForest(scene, T) {
   }
 
   // ---- undergrowth along the forest edge and under the trees
-  const scatter = (count, tries, test) => { const out = []; for (let i = 0; i < tries && out.length < count; i++) { const x = -40 + r() * 80, z = -20 + r() * 115; if (test(x, z)) out.push([x, z]); } return out; };
+  const scatter = (count, tries, test) => { const out = []; for (let i = 0; i < tries && out.length < count; i++) { const x = -40 + r() * 80, z = -20 + r() * 115; if (!W.heronView(x, z) && test(x, z)) out.push([x, z]); } return out; };
   const edge = (x, z) => { const e = W.cliffEdge(x); return Math.max(W.smoothstep(18.5, 23, Math.abs(x)), W.smoothstep(-3.5, -7, z), z > e + 4 ? 1 : 0); };
   const dry = (x, z) => W.terrainHeight(x, z) > 0.12 && !(z > W.cliffEdge(x) - 1 && z < W.cliffEdge(x) + 4.2);
 

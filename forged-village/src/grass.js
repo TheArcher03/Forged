@@ -52,6 +52,9 @@ function crossGeometry(w, h) {
 
 const inBuilding = (x, z, pad) => [...W.HOUSES, W.WORKSHOP].some((b) => Math.hypot(x - b.x, z - b.z) < b.r + pad);
 
+// Where flower heads and reed tips are, so insects can land on them: [x, y, z]
+export const FLOWERS = [], REEDS = [];
+
 export default function createGrass(scene, T) {
   const r = rng(101);
   const m = new THREE.Object3D(), col = new THREE.Color(), dry = new THREE.Color(), lush = new THREE.Color();
@@ -81,9 +84,10 @@ export default function createGrass(scene, T) {
   spots.forEach(([x, h, z, dirt, patch, woods], i) => {
     const clump = fbm(x * 1.3, z * 1.3 + 40, 2);                      // grass grows in clumps, not as a lawn
     const tall = (0.22 + patch * 0.7 + W.smoothstep(0.55, 0.8, clump) * 0.45) * (1 - dirt * 1.6) * (0.6 + r() * 0.8) * (1 - woods * 0.3);
+    const grazed = W.heronView(x, z) ? 0.32 : 1;                       // the bank down to the heron's shallows is grazed short
     m.position.set(x, h - 0.03, z); m.rotation.set(0, r() * 6.283, 0);
     const wide = 0.9 + r() * 0.7;
-    m.scale.set(wide, Math.max(0.16, tall), wide); m.updateMatrix(); grass.setMatrixAt(i, m.matrix);
+    m.scale.set(wide, Math.max(0.16, tall * grazed), wide); m.updateMatrix(); grass.setMatrixAt(i, m.matrix);
     const tone = fbm(x * 0.06 + 20, z * 0.06, 3), d = fbm(x * 0.35, z * 0.35 + 9, 2);
     lush.setRGB(0.10 + tone * 0.10, 0.22 + tone * 0.16, 0.03 + tone * 0.04);
     dry.setRGB(0.42, 0.36, 0.13);
@@ -109,6 +113,7 @@ export default function createGrass(scene, T) {
   const TINTS = [0xffffff, 0xfff0a8, 0xd9c2ff, 0xffffff, 0xffd98a];
   fl.forEach(([x, h, z], i) => {
     const s = 0.7 + r() * 0.7;
+    FLOWERS.push([x, h + 0.47 * s, z]);
     m.position.set(x, h, z); m.rotation.set(0, r() * 6.283, 0); m.scale.set(s, s, s); m.updateMatrix();
     flowers.setMatrixAt(i, m.matrix); flowers.setColorAt(i, col.setHex(TINTS[Math.floor(r() * TINTS.length)]));
   });
@@ -121,7 +126,7 @@ export default function createGrass(scene, T) {
     const spots = [];
     for (let i = 0; i < 40000 && spots.length < count; i++) {
       const x = -22 + r() * 44, z = -4 + r() * 82, h = W.terrainHeight(x, z);
-      if (h < 0.1 || inBuilding(x, z, 0.4) || z > W.cliffEdge(x) - 1 || !test(W.dirtAmount(x, z), x, z)) continue;
+      if (h < 0.1 || inBuilding(x, z, 0.4) || z > W.cliffEdge(x) - 1 || W.heronView(x, z) || !test(W.dirtAmount(x, z), x, z)) continue;
       spots.push([x, h, z]);
     }
     const mat = windAndGlow(Object.assign(scan.material.clone(), { alphaTest: 0.5, side: THREE.DoubleSide }), { sway: 0.04, flutter: 0.012, heightExpr: 'clamp(position.y * 3.0, 0.0, 1.0)', glow: 0.6 });
@@ -143,6 +148,7 @@ export default function createGrass(scene, T) {
   for (let i = 0; i < 40000 && rd.length < 1500; i++) {
     const x = -45 + r() * 90, z = W.creekZ(x) + (r() - 0.5) * 9;
     if (Math.abs(x + 0.5) < 4.5) continue;
+    if (W.heronView(x, z - 0.1)) continue;                         // a gap on the near bank, so the heron can be seen against the far reeds
     if (fbm(x * 0.3, z * 0.3 + 70, 2) < 0.48) continue;
     const h = W.terrainHeight(x, z);
     if (h < W.WATER_LEVEL - 0.08 || h > 0.2) continue;
@@ -154,6 +160,7 @@ export default function createGrass(scene, T) {
     rd.length);
   rd.forEach(([x, h, z], i) => {
     const s = 0.7 + r() * 0.8;
+    REEDS.push([x, h - 0.05 + 1.45 * s, z]);
     m.position.set(x, h - 0.05, z); m.rotation.set(0, r() * 6.283, 0); m.scale.set(s, s, s); m.updateMatrix();
     reeds.setMatrixAt(i, m.matrix); reeds.setColorAt(i, col.setRGB(0.75 + r() * 0.25, 0.8 + r() * 0.2, 0.6 + r() * 0.3));
   });

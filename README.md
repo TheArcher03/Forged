@@ -18,12 +18,16 @@ python3 forged-village/serve.py 8137
 
 Then open http://localhost:8137 in Chrome or Safari.
 
-**Controls:** click to start · WASD walk · Shift jog · mouse look · R back to the ford · Esc release the mouse.
+**Controls:** click to start · WASD walk · Shift jog · mouse look · E enter a building (at its door) · R back to the ford · Esc release the mouse.
 
 ## What's in here
 
 - `forged-village/src/world.js` — the shape of the land, building positions and collisions
 - `forged-village/src/` — terrain, grass, forest, creek, village, sky and effects
+- `forged-village/src/hearths.js` — the village fire, the pit kiln and the oven
+- `forged-village/src/entrances.js` — porches, hide curtains and doorways for each hut
+- `forged-village/src/shops.js` — the shop page each building opens (wares and prices are placeholders)
+- `forged-village/src/wildlife.js` — heron, red kites, swallows, butterflies, dragonflies and rising fish
 - `forged-village/assets/` — photo-scanned textures and models
 - `forged-village/lib/` — a local copy of Three.js
 
