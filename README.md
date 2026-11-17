@@ -8,8 +8,6 @@ nothing to install. This is a look-and-feel prototype only; it does not lock in 
 
 https://thearcher03.github.io/Forged/ (best in Chrome or Safari on a laptop or desktop; the first load fetches about 110 MB).
 
-**Strike test:** https://thearcher03.github.io/Forged/forged-strike/ (or open `forged-strike/index.html` directly; press ` for the debug panel)
-
 ## Run it locally
 
 Double-click `forged-village/start.command`, or:
