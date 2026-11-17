@@ -39,7 +39,7 @@ export async function loadScans(T) {
     bark: pair('pine_bark'), barkBroad: pair('bark_willow'), thatch: pair('thatch_roof_angled'), chalk: pair('rock_face_03'),
     wood: pair('weathered_brown_planks', true), rock: pair('mossy_rock'),
   };
-  const names = ['fern_02', 'shrub_03', 'weed_plant_02', 'rock_moss_set_01', 'rock_moss_set_02', 'rock_face_01', 'rock_face_02', 'tree_stump_01', 'dead_tree_trunk', 'wicker_basket_01', 'boulder_01'];
+  const names = ['fern_02', 'shrub_03', 'weed_plant_02', 'rock_moss_set_01', 'rock_moss_set_02', 'rock_face_01', 'rock_face_02', 'tree_stump_01', 'dead_tree_trunk', 'wicker_basket_01', 'boulder_01', 'wooden_bowl_01', 'wooden_bowl_02', 'carved_wooden_plate', 'food_apple_01'];
   T.scan = {}; T.scanned = {};
   await Promise.all([
     ...Object.entries(want).map(([k, p]) => p.then((v) => { T[k] = v; T.scanned[k] = true; }).catch((e) => console.warn('[scan texture]', k, e.message || e))),

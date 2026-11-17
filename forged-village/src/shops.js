@@ -8,90 +8,10 @@
 import * as THREE from 'three';
 import * as W from './world.js';
 import { STATE, DOOR_LEAVES, U } from './shared.js';
-import { Geo, V } from './forest.js';
+import { makeGoods, suede } from './goods.js';
 
 const TAU = Math.PI * 2;
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
-
-// ---------------------------------------------------------------- the goods, built in code
-function goods(T) {
-  const mat = (o) => new THREE.MeshStandardMaterial({ roughness: 0.85, ...o });
-  const hide = () => mat({ map: T.hide.map, normalMap: T.hide.normalMap, color: 0xc9a27a });
-  const clay = (c = 0xc98a62) => mat({ map: T.clay.map, normalMap: T.clay.normalMap, color: c, roughness: 0.8 });
-  const mesh = (g, m, y = 0) => { const o = new THREE.Mesh(g, m); o.position.y = y; o.castShadow = o.receiveShadow = true; return o; };
-  const group = (...o) => { const g = new THREE.Group(); o.forEach((x) => g.add(x)); return g; };
-  const tubes = (paths, r, m) => { const geo = new Geo(); for (const pts of paths) geo.tube(pts.map(([x, y, z]) => Object.assign(V(x, y, z), { r })), 5, 1, 1); return mesh(geo.build(), m); };
-  const lathe = (prof, m) => mesh(new THREE.LatheGeometry(prof.map(([x, y]) => new THREE.Vector2(x, y)), 20), m);
-  const cord = () => mat({ color: 0x5b4632, roughness: 1 });
-  const ring = (r, tube, m, y) => { const t = mesh(new THREE.TorusGeometry(r, tube, 6, 18), m, y); return t; };
-
-  return {
-    hideRoll() {
-      const roll = mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.42, 18), hide(), 0.075); roll.rotation.z = Math.PI / 2;
-      const flap = mesh(new THREE.BoxGeometry(0.4, 0.008, 0.12), hide(), 0.004); flap.position.z = 0.1;
-      const ties = [-0.12, 0.12].map((x) => { const t = ring(0.077, 0.006, cord(), 0.075); t.rotation.y = Math.PI / 2; t.position.x = x; return t; });
-      return group(roll, flap, ...ties);
-    },
-    sinew() {
-      const paths = []; for (let i = 0; i < 28; i++) { const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * 0.018; paths.push([[-0.15, 0.02 + Math.sin(a) * d, Math.cos(a) * d * 1.6], [0, 0.02 + Math.sin(a) * d * 0.4, Math.cos(a) * d * 0.5], [0.15, 0.02 + Math.sin(a + 1) * d, Math.cos(a + 1) * d * 1.8]]); }
-      const t = ring(0.014, 0.004, cord(), 0.02); t.rotation.y = Math.PI / 2;
-      return group(tubes(paths, 0.0025, mat({ color: 0xe6d8b8, roughness: 0.6 })), t);
-    },
-    cordCoil() {
-      const pts = []; for (let i = 0; i <= 150; i++) { const a = i * 0.13, r = 0.035 + i * 0.00045; pts.push([Math.cos(a) * r, 0.006 + (i % 40 === 0 ? 0.004 : 0), Math.sin(a) * r]); }
-      return group(tubes([pts], 0.0055, mat({ color: 0x7a5636, roughness: 0.9 })));
-    },
-    kneePad() { const p = mesh(new THREE.SphereGeometry(1, 18, 10), mat({ map: T.hide.map, normalMap: T.hide.normalMap, color: 0xb08a64 }), 0.03); p.scale.set(0.1, 0.034, 0.13);
-      const strap = mesh(new THREE.BoxGeometry(0.26, 0.012, 0.02), mat({ color: 0x4a3322 }), 0.05); return group(p, strap); },
-    foxPelt() {
-      const pelt = mesh(new THREE.PlaneGeometry(0.42, 0.5), mat({ map: T.pelt, alphaTest: 0.5, color: 0xf2b07a, side: THREE.DoubleSide }), 0.006); pelt.rotation.x = -Math.PI / 2;
-      const tail = tubes([[[0, 0.02, 0.22], [0.06, 0.025, 0.32], [0.02, 0.025, 0.42]]], 0.03, mat({ map: T.hide.map, color: 0xc8805a, roughness: 1 }));
-      const tip = mesh(new THREE.SphereGeometry(0.03, 10, 8), mat({ color: 0xece4d6 }), 0.025); tip.position.set(0.02, 0.025, 0.44);
-      return group(pelt, tail, tip);
-    },
-    flatbread() {
-      const m = mat({ map: T.dirt.map, color: 0xe8b678, roughness: 0.9 });
-      const a = mesh(new THREE.SphereGeometry(1, 20, 8), m, 0.012); a.scale.set(0.11, 0.016, 0.11);
-      const b = mesh(new THREE.SphereGeometry(1, 20, 8), m, 0.03); b.scale.set(0.1, 0.015, 0.1); b.position.x = 0.02; b.rotation.y = 1;
-      return group(a, b);
-    },
-    emmerBasket() {
-      const g = new THREE.Group();
-      if (T.scan?.wicker_basket_01) { const b = mesh(T.scan.wicker_basket_01.list[0], T.scan.wicker_basket_01.material); b.scale.setScalar(1.05); g.add(b); }
-      else g.add(mesh(new THREE.CylinderGeometry(0.17, 0.13, 0.12, 18, 1, true), mat({ color: 0x8a6a42, side: THREE.DoubleSide }), 0.06));
-      const grain = mesh(new THREE.CircleGeometry(0.155, 24), mat({ map: T.thatch.map, color: 0xf0c66a, roughness: 1 }), 0.1); grain.rotation.x = -Math.PI / 2; grain.scale.set(1.15, 0.85, 1);
-      g.add(grain); return g;
-    },
-    hazelnuts() {
-      const slab = mesh(new THREE.BoxGeometry(0.2, 0.012, 0.13), mat({ map: T.bark.map, color: 0x6a4c34 }), 0.006);
-      const nuts = []; for (let i = 0; i < 16; i++) { const n = mesh(new THREE.SphereGeometry(0.013, 8, 6), mat({ color: 0x8a5a2e, roughness: 0.55 }), 0.024 + (i > 9 ? 0.016 : 0)); n.position.x = (Math.random() - 0.5) * 0.12; n.position.z = (Math.random() - 0.5) * 0.07; n.scale.y = 0.85; nuts.push(n); }
-      return group(slab, ...nuts);
-    },
-    tarCake() { const c = mesh(new THREE.IcosahedronGeometry(1, 2), mat({ color: 0x16110d, roughness: 0.22, metalness: 0.05 }), 0.026); c.scale.set(0.06, 0.03, 0.05); return group(c); },
-    driedApples() {
-      const pts = []; for (let i = 0; i <= 20; i++) pts.push([-0.16 + i * 0.016, 0.006, Math.sin(i * 0.35) * 0.04]);
-      const slices = []; for (let i = 0; i < 7; i++) { const s = ring(0.021, 0.008, mat({ color: i % 2 ? 0xd9b98a : 0xc99a6a, roughness: 0.8 }), 0.01); s.rotation.x = Math.PI / 2 + 0.2; s.position.set(-0.12 + i * 0.04, 0.012, Math.sin((i * 2 + 2) * 0.35) * 0.04); slices.push(s); }
-      return group(tubes([pts], 0.003, cord()), ...slices);
-    },
-    cup() { return group(lathe([[0.001, 0], [0.035, 0], [0.045, 0.03], [0.047, 0.07], [0.042, 0.07], [0.04, 0.03], [0.001, 0.008]], clay(0xd29a72))); },
-    cookingPot() { return group(lathe([[0.001, 0], [0.06, 0.005], [0.115, 0.06], [0.12, 0.11], [0.1, 0.15], [0.108, 0.165], [0.098, 0.165], [0.09, 0.15], [0.001, 0.02]], clay(0x9a6248))); },
-    storageJar() {
-      const jar = lathe([[0.001, 0], [0.07, 0.0], [0.105, 0.1], [0.1, 0.22], [0.07, 0.29], [0.075, 0.31], [0.065, 0.31], [0.001, 0.02]], clay(0xc07a52));
-      const lid = mesh(new THREE.CylinderGeometry(0.072, 0.072, 0.014, 16), mat({ map: T.wood.map, color: 0x8a6e52 }), 0.318);
-      return group(jar, lid);
-    },
-    tarPot() {
-      const pot = lathe([[0.001, 0], [0.05, 0.004], [0.065, 0.04], [0.06, 0.075], [0.048, 0.075], [0.05, 0.04], [0.001, 0.016]], clay(0x6e4a38));
-      const tar = mesh(new THREE.CircleGeometry(0.048, 16), mat({ color: 0x0d0a08, roughness: 0.15 }), 0.06); tar.rotation.x = -Math.PI / 2;
-      return group(pot, tar);
-    },
-    ochre() {
-      const pile = mesh(new THREE.ConeGeometry(0.065, 0.04, 18), mat({ color: 0xa8381f, roughness: 1 }), 0.02);
-      const lump = mesh(new THREE.DodecahedronGeometry(0.025, 0), mat({ color: 0x8e2c18, roughness: 0.9 }), 0.02); lump.position.x = 0.09;
-      return group(pile, lump);
-    },
-  };
-}
 
 // ---------------------------------------------------------------- who sells what
 const SHOPS = {
@@ -105,11 +25,11 @@ const SHOPS = {
       leave: ['Bring me a scraper that stays sharp.', 'Off with you, then. The flies are waiting.'],
     },
     wares: [
-      { name: 'Cured deer hide', price: 6, stock: 2, make: 'hideRoll', desc: 'Smoked over birch. Supple, and it sheds the rain.' },
-      { name: 'Sinew bundle', price: 2, stock: 3, make: 'sinew', desc: 'Wet it and wrap it; it shrinks tight as it dries. For binding a blade to its handle.' },
-      { name: 'Rawhide cord', price: 1, stock: 3, make: 'cordCoil', desc: 'A long coil, cut in one spiral from a single hide.' },
-      { name: 'Knee pad', price: 3, stock: 2, make: 'kneePad', desc: 'Thick hide for a knapper’s knee.' },
-      { name: 'Fox pelt', price: 5, stock: 1, make: 'foxPelt', desc: 'Winter fur, stretched and dried.' },
+      { name: 'Cured deer hide', price: 6, stock: 2, make: 'hideRoll', at: [-0.4, -1], desc: 'Smoked over birch. Supple, and it sheds the rain.' },
+      { name: 'Sinew bundle', price: 2, stock: 3, make: 'sinew', at: [-0.42, 1], desc: 'Wet it and wrap it; it shrinks tight as it dries. For binding a blade to its handle.' },
+      { name: 'Rawhide cord', price: 1, stock: 3, make: 'cordCoil', at: [0.02, 1], desc: 'A long coil, cut in one spiral from a single hide.' },
+      { name: 'Knee pad', price: 3, stock: 2, make: 'kneePad', at: [0.42, 1], desc: 'Thick hide for a knapper’s knee.' },
+      { name: 'Fox pelt', price: 5, stock: 1, make: 'foxPelt', at: [0.3, -1], desc: 'Winter fur, stretched and dried.' },
     ],
   },
   hearth: {
@@ -122,11 +42,11 @@ const SHOPS = {
       leave: ['Come back before the bread’s gone.', 'Tell Tamsa I said nothing.'],
     },
     wares: [
-      { name: 'Flatbread', price: 1, stock: 3, make: 'flatbread', desc: 'Emmer flour, baked on the oven floor this morning.' },
-      { name: 'Basket of emmer', price: 4, stock: 2, make: 'emmerBasket', desc: 'Threshed and winnowed. A family’s worth for a week.' },
-      { name: 'Hazelnuts', price: 1, stock: 3, make: 'hazelnuts', desc: 'A pouchful, roasted in the embers.' },
-      { name: 'Birch tar cake', price: 3, stock: 2, make: 'tarCake', desc: 'Boiled down from birch bark. Warm it, and it glues a blade into its handle.' },
-      { name: 'Dried apples', price: 2, stock: 2, make: 'driedApples', desc: 'Small and sour, threaded on a string.' },
+      { name: 'Flatbread', price: 1, stock: 3, make: 'flatbread', at: [-0.47, 1], desc: 'Emmer flour, baked on the oven floor this morning.' },
+      { name: 'Basket of emmer', price: 4, stock: 2, make: 'emmerBasket', at: [-0.33, -1], desc: 'Threshed and winnowed. A family’s worth for a week.' },
+      { name: 'Hazelnuts', price: 1, stock: 3, make: 'hazelnuts', at: [0.0, 1], desc: 'A pouchful, roasted in the embers.' },
+      { name: 'Birch tar cake', price: 3, stock: 2, make: 'tarCake', at: [0.44, 1], desc: 'Boiled down from birch bark. Warm it, and it glues a blade into its handle.' },
+      { name: 'Crab apples', price: 2, stock: 2, make: 'crabApples', at: [0.33, -1], desc: 'Small and sharp, picked at the edge of the woods.' },
     ],
   },
   workshop: {
@@ -147,11 +67,11 @@ const SHOPS = {
       leave: ['Bring it back if it cracks. It won’t.', 'Go gently.'],
     },
     wares: [
-      { name: 'Drinking cup', price: 2, stock: 3, make: 'cup', desc: 'Small enough for one hand, its rim pressed with cord.' },
-      { name: 'Cooking pot', price: 5, stock: 2, make: 'cookingPot', desc: 'Round-bottomed, to sit down in the coals.' },
-      { name: 'Storage jar', price: 7, stock: 1, make: 'storageJar', desc: 'Tall, with a wooden lid. Keeps grain dry through winter.' },
-      { name: 'Tar pot', price: 4, stock: 2, make: 'tarPot', desc: 'Small and thick-walled, for heating birch tar.' },
-      { name: 'Red ochre', price: 2, stock: 3, make: 'ochre', desc: 'Ground fine and mixed with fat. For marking what’s yours.' },
+      { name: 'Drinking cup', price: 2, stock: 3, make: 'cup', at: [-0.5, 1], desc: 'Small enough for one hand, its rim pressed with cord.' },
+      { name: 'Cooking pot', price: 5, stock: 2, make: 'cookingPot', at: [0.3, -1], desc: 'Round-bottomed, to sit down in the coals.' },
+      { name: 'Storage jar', price: 7, stock: 1, make: 'storageJar', at: [-0.28, -1], desc: 'Tall, with a wooden lid. Keeps grain dry through winter.' },
+      { name: 'Tar pot', price: 4, stock: 2, make: 'tarPot', at: [-0.08, 1], desc: 'Small and thick-walled, for heating birch tar.' },
+      { name: 'Red ochre', price: 2, stock: 3, make: 'ochre', at: [0.4, 1], desc: 'Ground fine and mixed with fat. For marking what’s yours.' },
     ],
   },
 };
@@ -230,14 +150,15 @@ export default function createShops(scene, T, { renderer, camera }) {
     <div class="help"><span><span class="kb">←</span><span class="kb">→</span> or point to choose</span><span><span class="kb">Enter</span> or click to trade</span></div>`;
   document.body.appendChild(ui);
   const $ = (s) => ui.querySelector(s);
-  const make = goods(T);
+  const make = makeGoods(T);
   const purse = { beads: 20 }, satchel = [];
 
   // ---- build each trading table and lay out its goods
   const tables = {};
   const plank = new THREE.MeshStandardMaterial({ map: T.wood.map, normalMap: T.wood.normalMap, color: 0xb59c82, roughness: 0.9 });
   const barkM = new THREE.MeshStandardMaterial({ map: T.bark.map, normalMap: T.bark.normalMap, roughness: 0.95 });
-  const hideM = new THREE.MeshStandardMaterial({ map: T.hide.map, normalMap: T.hide.normalMap, color: 0xd9bf98, roughness: 0.9, side: THREE.DoubleSide });
+  const clothTex = suede('#a98258', '#3a2414', 61); clothTex.map.repeat.set(2, 1.3); clothTex.normalMap.repeat.set(2, 1.3);
+  const hideM = new THREE.MeshStandardMaterial({ map: clothTex.map, normalMap: clothTex.normalMap, color: 0xe8d6bc, roughness: 0.92, side: THREE.DoubleSide });
   for (const b of W.HOUSES) {
     const f = W.doorFrame(b), side = W.TRADE[b.key].side, c = f.at(2.1, 0, side * 2.05);
     const ground = W.terrainHeight(c.x, c.z);
@@ -259,7 +180,7 @@ export default function createShops(scene, T, { renderer, camera }) {
     g.traverse((o) => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
     const items = SHOPS[b.key].wares.map((w, i) => {
       const it = make[w.make](); it.traverse((o) => { if (o.isMesh) o.material = o.material.clone(); });
-      it.position.set(-0.58 + i * 0.29, 0.645, (i % 2 ? 0.1 : -0.08)); it.rotation.y = (Math.random() - 0.5) * 0.6;
+      it.position.set(w.at[0], 0.646, -side * w.at[1] * 0.17); it.rotation.y = (Math.random() - 0.5) * 0.5;
       g.add(it);
       return { w, obj: it, base: it.position.clone(), rot: it.rotation.y, lift: 0, stock: w.stock };
     });
@@ -267,15 +188,20 @@ export default function createShops(scene, T, { renderer, camera }) {
     for (const x of [-0.45, 0.45]) { const q = new THREE.Vector3(x, 0, 0).applyQuaternion(g.quaternion).add(g.position); W.CIRCLES.push({ x: q.x, z: q.z, r: 0.5 }); }
     // the view while trading: standing on the path, looking down at the goods with the doorway beyond
     g.updateMatrixWorld(true);
-    const pos = new THREE.Vector3(0.7, 1.4, -side * 0.98).applyMatrix4(g.matrixWorld);
-    const target = new THREE.Vector3(-0.22, 0.63, -side * 0.12).applyMatrix4(g.matrixWorld);
-    tables[b.key] = { g, items, view: { pos, target } };
+    const pos = new THREE.Vector3(0.48, 1.24, -side * 0.9).applyMatrix4(g.matrixWorld);
+    const target = new THREE.Vector3(-0.1, 0.66, -side * 0.02).applyMatrix4(g.matrixWorld);
+    const lamp = new THREE.Vector3(0.35, 1.7, -side * 0.75).applyMatrix4(g.matrixWorld), centre = new THREE.Vector3(0, 0.66, 0).applyMatrix4(g.matrixWorld);
+    tables[b.key] = { g, items, view: { pos, target }, lamp, centre };
   }
 
   {                                                                       // your workshop: the display rack by the entrance, still empty
     const y = W.terrainHeight(W.WORKSHOP.x, W.WORKSHOP.z);
     tables.workshop = { g: null, items: [], own: true, view: { pos: new THREE.Vector3(1.3, y + 1.5, 53.4), target: new THREE.Vector3(3.4, y + 0.95, 56.5) } };
   }
+
+  // ---- a soft, warm light over the table while you trade (always present, so turning it up costs nothing)
+  const spot = new THREE.SpotLight(0xffd6a8, 0, 4.5, 0.62, 0.85, 1.4);
+  scene.add(spot, spot.target);
 
   // ---- state
   let near = null, open = null, sel = 0, lineTimer = 0, busy = false;
@@ -320,6 +246,7 @@ export default function createShops(scene, T, { renderer, camera }) {
     if (!tables[key]) return;
     Sound.unlock();
     open = key; STATE.paused = true; STATE.view = tables[key].view; busy = false;
+    if (tables[key].lamp) { spot.position.copy(tables[key].lamp); spot.target.position.copy(tables[key].centre); spot.target.updateMatrixWorld(); }
     if (document.pointerLockElement) document.exitPointerLock();
     if (DOOR_LEAVES[key]) { DOOR_LEAVES[key].target = 1; Sound.creak(true); }
     $('.house').textContent = SHOPS[key].house;
@@ -378,6 +305,7 @@ export default function createShops(scene, T, { renderer, camera }) {
   // ---- input
   prompt.addEventListener('click', () => { if (near && !open) enter(near); });
   ui.addEventListener('click', (e) => { if (e.target.closest('[data-leave]')) leave(true); });
+  window.forgedTrade = { tables, enter, leave, get open() { return open; } };   // for checking views from the console
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyE' && !e.repeat) { if (open) leave(true); else if (near) enter(near); return; }
     if (!open) return;
@@ -401,6 +329,7 @@ export default function createShops(scene, T, { renderer, camera }) {
   const fwd = new THREE.Vector3();
   return (dt, cam, player) => {
     const t = U.uTime.value;
+    spot.intensity += ((open && tables[open].lamp ? 7 : 0) - spot.intensity) * Math.min(1, dt * 3);
     if (open) {
       const tb = tables[open];
       tb.items.forEach((it, i) => {                                       // the chosen good lifts into the light
@@ -408,7 +337,7 @@ export default function createShops(scene, T, { renderer, camera }) {
         it.lift += ((on ? 1 : 0) - it.lift) * Math.min(1, dt * 8);
         it.obj.position.y = it.base.y + it.lift * (0.035 + Math.sin(t * 2.2) * 0.006);
         it.obj.rotation.y = it.rot + it.lift * Math.sin(t * 0.9) * 0.35;
-        it.obj.traverse((o) => { if (o.isMesh && o.material.emissive) { o.material.emissive.setRGB(0.32, 0.2, 0.08); o.material.emissiveIntensity = it.lift * 0.55; } });
+        it.obj.traverse((o) => { if (o.isMesh && o.material.emissive) { o.material.emissive.setRGB(0.3, 0.2, 0.1); o.material.emissiveIntensity = it.lift * 0.22; } });
       });
       const it = tb.items[sel];
       if (it && it.stock > 0 && !tb.own) { const [x, y] = screenOf(it.obj, 0.16); const tag = $('.tag'); tag.style.left = `${x}px`; tag.style.top = `${y}px`; }
@@ -417,7 +346,7 @@ export default function createShops(scene, T, { renderer, camera }) {
     }
     lineTimer -= dt; if (lineTimer <= 0) $('.line').style.opacity = 0;
     for (const tb of Object.values(tables)) tb.items.forEach((it) => {      // settle any good left lifted
-      if (it.lift > 0.001) { it.lift *= 1 - Math.min(1, dt * 8); it.obj.position.y = it.base.y + it.lift * 0.035; it.obj.traverse((o) => { if (o.isMesh && o.material.emissive) o.material.emissiveIntensity = it.lift * 0.55; }); }
+      if (it.lift > 0.001) { it.lift *= 1 - Math.min(1, dt * 8); it.obj.position.y = it.base.y + it.lift * 0.035; it.obj.traverse((o) => { if (o.isMesh && o.material.emissive) o.material.emissiveIntensity = it.lift * 0.22; }); }
     });
     if (STATE.paused) return;
     cam.getWorldDirection(fwd);
