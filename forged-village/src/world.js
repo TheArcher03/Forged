@@ -143,22 +143,16 @@ export const CIRCLES = [
   ...WORKSHOP_POSTS,
 ];
 
-export const PEOPLE = [];   // villagers' current positions, refreshed every frame: { x, z, r }
-
 const wrapAngle = (a) => Math.atan2(Math.sin(a), Math.cos(a));
-export function resolveCollisions(pos, radius = PLAYER_RADIUS, people = true) {
+export function resolveCollisions(pos) {
   for (let pass = 0; pass < 2; pass++) {
-    if (people) for (const c of PEOPLE) {
-      const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), min = c.r + radius;
-      if (d < min && d > 1e-6) { pos.x = c.x + (dx / d) * min; pos.z = c.z + (dz / d) * min; }
-    }
     for (const c of CIRCLES) {
-      const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), min = c.r + radius;
+      const dx = pos.x - c.x, dz = pos.z - c.z, d = Math.hypot(dx, dz), min = c.r + PLAYER_RADIUS;
       if (d < min && d > 1e-6) { pos.x = c.x + (dx / d) * min; pos.z = c.z + (dz / d) * min; }
     }
     const dx = pos.x - WORKSHOP.x, dz = pos.z - WORKSHOP.z, d = Math.hypot(dx, dz);
     const inGap = Math.abs(wrapAngle(Math.atan2(dx, dz) - Math.PI)) < WORKSHOP.openHalfAngle;
-    const pad = radius + 0.2;
+    const pad = PLAYER_RADIUS + 0.2;
     if (!inGap && d > 1e-6 && Math.abs(d - WORKSHOP.r) < pad) {
       const target = d < WORKSHOP.r ? WORKSHOP.r - pad : WORKSHOP.r + pad;
       pos.x = WORKSHOP.x + (dx / d) * target; pos.z = WORKSHOP.z + (dz / d) * target;

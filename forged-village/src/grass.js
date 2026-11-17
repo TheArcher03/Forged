@@ -76,7 +76,7 @@ export default function createGrass(scene, T) {
   const grass = new THREE.InstancedMesh(
     tuftGeometry(6, rng(7)),
     windAndGlow(new THREE.MeshStandardMaterial({ side: THREE.DoubleSide, roughness: 0.78, metalness: 0 }),
-      { sway: 0.16, flutter: 0.035, glow: 0.9, upNormal: 0.8, rootDark: 0.3, peopleShadow: true }),
+      { sway: 0.16, flutter: 0.035, glow: 0.9, upNormal: 0.8, rootDark: 0.3 }),
     spots.length);
   spots.forEach(([x, h, z, dirt, patch, woods], i) => {
     const clump = fbm(x * 1.3, z * 1.3 + 40, 2);                      // grass grows in clumps, not as a lawn

@@ -2,7 +2,6 @@
 import * as THREE from 'three';
 import * as W from './world.js';
 import { fbm } from './noise.js';
-import { U } from './shared.js';
 
 export function createTerrain(scene, T) {
   const X0 = -90, X1 = 90, Z0 = -70, Z1 = 140, STEP = 0.5;
@@ -41,7 +40,7 @@ export function createTerrain(scene, T) {
   mat.onBeforeCompile = (s) => {
     Object.assign(s.uniforms, {
       tDirt: { value: T.dirt.map }, tDirtN: { value: T.dirt.normalMap }, tGravel: { value: T.gravel.map }, tGravelN: { value: T.gravel.normalMap },
-      tForest: { value: T.forest.map }, tForestN: { value: T.forest.normalMap }, tChalk: { value: T.chalk.map }, tMacro: { value: T.macro }, tNpcShadow: U.tNpcShadow, uNpcShadowMat: U.uNpcShadowMat,
+      tForest: { value: T.forest.map }, tForestN: { value: T.forest.normalMap }, tChalk: { value: T.chalk.map }, tMacro: { value: T.macro },
     });
     s.vertexShader = s.vertexShader
       .replace('#include <common>', '#include <common>\nattribute vec4 aSplat; attribute vec2 aAoWet; varying vec4 vSplat; varying vec2 vAoWet; varying vec3 vWPos;')
@@ -49,7 +48,6 @@ export function createTerrain(scene, T) {
     s.fragmentShader = s.fragmentShader
       .replace('#include <common>', `#include <common>
         uniform sampler2D tDirt, tDirtN, tGravel, tGravelN, tForest, tForestN, tChalk, tMacro;
-        uniform sampler2D tNpcShadow; uniform mat4 uNpcShadowMat;
         varying vec4 vSplat; varying vec2 vAoWet; varying vec3 vWPos;`)
       .replace('#include <map_fragment>', `
         vec2 gUv = vWPos.xz;
@@ -68,10 +66,6 @@ export function createTerrain(scene, T) {
         gcol = mix(gcol, cGravel, w.z);
         gcol = mix(gcol, cChalk, w.y);
         gcol *= vAoWet.x * mix(1.0, 0.36, vAoWet.y);
-        // soft shadows cast by the villagers
-        vec2 ns = (uNpcShadowMat * vec4(vWPos, 1.0)).xy; float e = 1.2 / 2048.0;
-        float npc = (texture2D(tNpcShadow, ns + vec2(e, e)).r + texture2D(tNpcShadow, ns + vec2(-e, e)).r + texture2D(tNpcShadow, ns + vec2(e, -e)).r + texture2D(tNpcShadow, ns + vec2(-e, -e)).r + texture2D(tNpcShadow, ns).r) * 0.2;
-        gcol *= 1.0 - 0.55 * npc;
         diffuseColor.rgb *= gcol;`)
       .replace('#include <roughnessmap_fragment>', '#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.28, vAoWet.y * 0.9);')
       .replace('texture2D( normalMap, vNormalMapUv ).xyz * 2.0 - 1.0',

@@ -7,8 +7,6 @@ export const U = {
   uSunDir: { value: new THREE.Vector3(SUN_DIR.x, SUN_DIR.y, SUN_DIR.z) },
   uSunDirView: { value: new THREE.Vector3() },
   uSunColor: { value: new THREE.Color(1.0, 0.74, 0.46) },
-  tNpcShadow: { value: null },                 // villagers seen from the sun, for their shadows on the ground
-  uNpcShadowMat: { value: new THREE.Matrix4() },
 };
 
 // Turns the brown scanned rock into pale chalk: the same stone, bleached.
@@ -22,11 +20,11 @@ export function bleach(material) {
 
 // Adds a gentle wind sway and a warm back-lit glow to a standard material (grass, leaves).
 // opts.sway: metres of movement at full height; opts.heightExpr: GLSL giving 0..1 "how far up the plant".
-export function windAndGlow(material, { sway = 0.1, flutter = 0.02, heightExpr = 'uv.y', glow = 0.5, upNormal = 0, rootDark = 1, softSides = true, peopleShadow = false } = {}) {
+export function windAndGlow(material, { sway = 0.1, flutter = 0.02, heightExpr = 'uv.y', glow = 0.5, upNormal = 0, rootDark = 1, softSides = true } = {}) {
   material.onBeforeCompile = (shader) => {
-    Object.assign(shader.uniforms, { uTime: U.uTime, uSunDirView: U.uSunDirView, uSunColor: U.uSunColor, tNpcShadow: U.tNpcShadow, uNpcShadowMat: U.uNpcShadowMat });
+    Object.assign(shader.uniforms, { uTime: U.uTime, uSunDirView: U.uSunDirView, uSunColor: U.uSunColor });
     shader.vertexShader = shader.vertexShader
-      .replace('#include <common>', '#include <common>\nuniform float uTime;\nvarying float vHeight;\nvarying vec3 vWp;')
+      .replace('#include <common>', '#include <common>\nuniform float uTime;\nvarying float vHeight;')
       .replace('#include <beginnormal_vertex>', `#include <beginnormal_vertex>
         ${upNormal ? `objectNormal = normalize(mix(objectNormal, vec3(0.0, 1.0, 0.0), ${upNormal.toFixed(2)}));` : ''}`)
       .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -37,7 +35,6 @@ export function windAndGlow(material, { sway = 0.1, flutter = 0.02, heightExpr =
         #else
           vec3 wp = transformed;
         #endif
-        vWp = wp;
         float gust = sin(uTime * 0.6 + wp.x * 0.07 + wp.z * 0.05) * 0.5 + 0.5;
         float w1 = sin(uTime * 1.7 + wp.x * 0.45 + wp.z * 0.3) * (0.35 + 0.65 * gust);
         float w2 = sin(uTime * 4.3 + wp.x * 2.1 + wp.z * 1.7 + wp.y * 1.3);
@@ -51,9 +48,8 @@ export function windAndGlow(material, { sway = 0.1, flutter = 0.02, heightExpr =
     if (softSides) shader.fragmentShader = shader.fragmentShader.replace('#include <normal_fragment_begin>',
       '#include <normal_fragment_begin>\n#ifdef DOUBLE_SIDED\n normal *= faceDirection;\n#endif');
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform vec3 uSunDirView;\nuniform vec3 uSunColor;\nvarying float vHeight;\nvarying vec3 vWp;\nuniform sampler2D tNpcShadow;\nuniform mat4 uNpcShadowMat;')
-      .replace('#include <color_fragment>', `#include <color_fragment>\n diffuseColor.rgb *= mix(${rootDark.toFixed(2)}, 1.0, clamp(vHeight, 0.0, 1.0));
-        ${peopleShadow ? 'diffuseColor.rgb *= 1.0 - 0.5 * texture2D(tNpcShadow, (uNpcShadowMat * vec4(vWp, 1.0)).xy).r;' : ''}`)
+      .replace('#include <common>', '#include <common>\nuniform vec3 uSunDirView;\nuniform vec3 uSunColor;\nvarying float vHeight;')
+      .replace('#include <color_fragment>', `#include <color_fragment>\n diffuseColor.rgb *= mix(${rootDark.toFixed(2)}, 1.0, clamp(vHeight, 0.0, 1.0));`)
       .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         // light shining through thin leaves when you look toward the sun
         float back = pow(clamp(dot(normalize(vViewPosition), -uSunDirView), 0.0, 1.0), 3.0);
