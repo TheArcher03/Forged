@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FORGED: Strike test</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="stage" aria-label="Workbench with flint"></canvas>
+
+<header id="hud">
+  <div class="hud-side">
+    <span class="label">Shell beads</span>
+    <span id="beads" class="big">10</span>
+  </div>
+  <div class="hud-mid">
+    <div id="phase-title">Buy a stone</div>
+    <div id="phase-help"></div>
+  </div>
+  <div class="hud-side right">
+    <span class="label">Best blank</span>
+    <span id="best" class="big">–</span>
+    <button id="mute" data-act="mute" type="button">Sound on</button>
+  </div>
+</header>
+
+<section id="panel"></section>
+<div id="card-wrap" hidden><div id="card" role="dialog" aria-live="polite"></div></div>
+<aside id="debug" hidden></aside>
+<div id="hint">FORGED: Strike test · press <kbd>`</kbd> for the debug panel</div>
+
+<script src="strike.js"></script>
+</body>
+</html>
